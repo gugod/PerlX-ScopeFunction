@@ -1,0 +1,5 @@
+Revision history of PerlX-ScopeFunction
+
+0.01    2022-03-09
+        - First release.
+        - The introduction of keyword `with`.
