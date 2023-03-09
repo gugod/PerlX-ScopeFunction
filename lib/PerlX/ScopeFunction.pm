@@ -34,8 +34,8 @@ PerlX::ScopeFunction -- new keywords for creating scopes.
 
 =head1 SYNOPSIS
 
-Use C<with> keyword to constraint the use result of the given
-expression to a smaller lexical scope.
+Use C<with> keyword to constraint the result of the given expression
+to a smaller lexical scope.
 
     with ( grep { $_ % 2 == 0 } @input ) {
         my @even_nums = @_;
@@ -45,9 +45,8 @@ expression to a smaller lexical scope.
 
 =head1 DESCRIPTION
 
-Scope functions are helper functions that helps to constraint the use
-of an given expression, to make the boundray look clearer, usually by
-making a inner lexical scope.
+Scope functions can be used to create small lexical scope, inside
+which the results of an given expression are used, but not outside.
 
 =head2 C<with> (EXPR) BLOCK
 
