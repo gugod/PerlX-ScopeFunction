@@ -1,7 +1,7 @@
 package PerlX::ScopeFunction;
 use v5.36;
 
-our $VERSIONV = "0.01";
+our $VERSION = "0.01";
 
 use Keyword::Simple;
 use Text::Balanced qw( extract_bracketed extract_codeblock );
