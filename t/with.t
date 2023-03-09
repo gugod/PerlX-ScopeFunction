@@ -13,12 +13,13 @@ subtest "__rewrite_with", sub {
     my $code = "( EXPR ) { CODE }\n foo();";
     PerlX::ScopeFunction::__rewrite_with( \$code );
 
-    is $code, "(sub { CODE })->( EXPR );\n foo();";
+    is $code, "(sub { local \$_ = \$_[-1]; CODE })->( EXPR );\n foo();";
 };
 
 
 subtest "basic", sub {
     with( range(5) ) {
+        is $_, 5;
         is \@_, array {
             item 1;
             item 2;
@@ -30,6 +31,7 @@ subtest "basic", sub {
     }
 
     with( 1..5 ) {
+        is $_, 5;
         is \@_, array {
             item 1;
             item 2;
@@ -38,6 +40,13 @@ subtest "basic", sub {
             item 5;
             end;
         };
+    }
+};
+
+subtest "scalar context", sub {
+    with ( scalar localtime ) {
+        is scalar(@_), 1;
+        is $_, $_[0];
     }
 };
 
