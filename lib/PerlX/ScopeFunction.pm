@@ -1,6 +1,8 @@
 package PerlX::ScopeFunction;
 use v5.36;
 
+our $VERSIONV = "0.01";
+
 use Keyword::Simple;
 use Text::Balanced qw( extract_bracketed extract_codeblock );
 
@@ -47,18 +49,16 @@ Scope functions are helper functions that helps to constraint the use
 of an given expression, to make the boundray look clearer, usually by
 making a inner lexical scope.
 
-=head2 C<with> (EXPR) { CODE }
+=head2 C<with> (EXPR) BLOCK
 
 The C<with> keyword can be used to bring the result of an given EXPR
 to a smaller scope (code block):
 
-    with ( EXPR ) {
-        CODE
-    }
+    with ( EXPR ) BLOCK
 
-The EXPR are evaluated in list context, and the result (a list) can be
-accessed via either C<@_> or C<$_>. C<@_> contains the entire list and
-C<$_> contains the last value of the list (C<$_[-1]>).
+The EXPR are evaluated in list context, and the result (a list) is
+available inside BLOCK as C<@_>. The conventional topic variable C<$_>
+is also assigned the last value of the list (C<$_[-1]>).
 
 =head1 AUTHOR
 
