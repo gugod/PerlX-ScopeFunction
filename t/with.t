@@ -1,7 +1,7 @@
 use v5.36;
 use Test2::V0;
 
-use PerlX::ScopeFunction::with;
+use PerlX::ScopeFunction;
 
 sub range ($n) {
     (1..$n)
@@ -11,7 +11,7 @@ subtest "__rewrite_with", sub {
     note "__rewrite_with() is called by Keyword::Simple and the keyword \"with\" is trimed from the input";
 
     my $code = "( EXPR ) { CODE }\n foo();";
-    PerlX::ScopeFunction::with::__rewrite_with( \$code );
+    PerlX::ScopeFunction::__rewrite_with( \$code );
 
     is $code, "(sub { CODE })->( EXPR );\n foo();";
 };

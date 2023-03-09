@@ -1,4 +1,4 @@
-package PerlX::ScopeFunction::with;
+package PerlX::ScopeFunction;
 use v5.36;
 
 use Keyword::Simple;
