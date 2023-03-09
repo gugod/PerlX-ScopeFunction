@@ -7,6 +7,16 @@ sub range ($n) {
     (1..$n)
 }
 
+subtest "__rewrite_with", sub {
+    note "__rewrite_with() is called by Keyword::Simple and the keyword \"with\" is trimed from the input";
+
+    my $code = "( EXPR ) { CODE }\n foo();";
+    PerlX::ScopeFunction::with::__rewrite_with( \$code );
+
+    is $code, "(sub { CODE })->( EXPR );\n foo();";
+};
+
+
 subtest "basic", sub {
     with( range(5) ) {
         is \@_, array {
@@ -15,8 +25,9 @@ subtest "basic", sub {
             item 3;
             item 4;
             item 5;
-        }
-    };
+            end;
+        };
+    }
 
     with( 1..5 ) {
         is \@_, array {
@@ -25,8 +36,52 @@ subtest "basic", sub {
             item 3;
             item 4;
             item 5;
+            end;
+        };
+    }
+};
+
+subtest "nested parens/brackets", sub {
+    with ( (1,2,(3,4)),[5] ) {
+        is \@_, array {
+            item 1;
+            item 2;
+            item 3;
+            item 4;
+            item array {
+                item 5;
+                end;
+            };
+            end;
         }
     }
+};
+
+subtest "whitespaces", sub {
+    ok lives {
+        with ( 1 ) {
+            ok 1;
+        };
+    };
+
+    ok lives {
+        with (1) { ok 1 };
+    };
+
+    ok lives {
+        with(1){ok 1};
+    };
+
+    ok lives {
+        with(1)
+          {ok 1};
+    };
+
+    ok lives {
+        with
+          (1)
+          {ok 1};
+    };
 };
 
 

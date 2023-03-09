@@ -17,7 +17,7 @@ sub __rewrite_with {
     my $remainder;
     (my $expr, $remainder) = extract_bracketed($$ref, '()');
     (my $codeBlock, $remainder) = extract_codeblock( $remainder );
-    my $code = 'sub ' . $codeBlock . '->' . $expr . ";";
+    my $code = '(sub ' . $codeBlock . ')->' . $expr . ";";
     $$ref = $code . $remainder;
 }
 
