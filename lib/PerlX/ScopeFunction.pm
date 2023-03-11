@@ -75,7 +75,7 @@ __END__
 
 =head1 NAME
 
-PerlX::ScopeFunction -- new keywords for creating scopes.
+PerlX::ScopeFunction - new keywords for creating scopes.
 
 =head1 SYNOPSIS
 
