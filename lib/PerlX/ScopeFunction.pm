@@ -6,16 +6,61 @@ our $VERSION = "0.01";
 use Keyword::Simple;
 use Text::Balanced qw( extract_bracketed extract_codeblock );
 
-sub import {
-    Keyword::Simple::define 'with', \&__rewrite_with;
+our %STASH = ();
+
+sub __parse_imports (@args) {
+    my %import_as;
+
+    my $keyword;
+    while (@args) {
+        my $it = shift @args;
+        if (defined($keyword)) {
+            if (!ref($it)) {
+                $import_as{$keyword} = $keyword;
+                $keyword = $it;
+            } elsif (ref($it) eq 'HASH') {
+                $import_as{$keyword} = $it->{'-as'} // $keyword;
+                $keyword = undef;
+            }
+        } else {
+            if (!ref($it)) {
+                $keyword = $it
+            }
+        }
+    }
+
+    $import_as{$keyword} = $keyword if defined($keyword);
+
+    return \%import_as;
 }
 
-sub unimport {
-    Keyword::Simple::undefine 'with';
+sub import ($class, @args) {
+    my %handler = (
+        'with' => \&__rewrite_with,
+    );
+
+    my %import_as = do {
+        if (@args > 0) {
+            %{ __parse_imports(@args) };
+        } else {
+            map { $_ => $_ } keys %handler;
+        }
+    };
+
+    for (keys %import_as) {
+        my $keyword = $import_as{$_};
+        Keyword::Simple::define $keyword, $handler{$_};
+        push @{ $STASH{$class} }, $keyword;
+    }
 }
 
-sub __rewrite_with {
-    my ($ref) = @_;
+sub unimport ($class) {
+    for my $keyword (@{ $STASH{$class} //[]}) {
+        Keyword::Simple::undefine $keyword;
+    }
+}
+
+sub __rewrite_with ($ref) {
     my $remainder;
     (my $expr, $remainder) = extract_bracketed($$ref, '()');
     (my $codeBlock, $remainder) = extract_codeblock( $remainder );
@@ -37,6 +82,8 @@ PerlX::ScopeFunction -- new keywords for creating scopes.
 Use C<with> keyword to constraint the result of the given expression
 to a smaller lexical scope.
 
+    use PerlX::ScopeFunction;
+
     with ( grep { $_ % 2 == 0 } @input ) {
         my @even_nums = @_;
 
@@ -48,7 +95,7 @@ to a smaller lexical scope.
 Scope functions can be used to create small lexical scope, inside
 which the results of an given expression are used, but not outside.
 
-=head2 C<with> (EXPR) BLOCK
+=head2 C<with (EXPR) BLOCK>
 
 The C<with> keyword can be used to bring the result of an given EXPR
 to a smaller scope (code block):
@@ -58,6 +105,18 @@ to a smaller scope (code block):
 The EXPR are evaluated in list context, and the result (a list) is
 available inside BLOCK as C<@_>. The conventional topic variable C<$_>
 is also assigned the last value of the list (C<$_[-1]>).
+
+=head1 Alternative names
+
+Since the keywords provided in this module are commonly defined in other CPAN modules, this module also provides a way to let users to import those keywords as different name, with a conventional spec also seen in L<Sub::Exporter>.
+
+For example, to import C<with> as "given_these", you say:
+
+    use PerlX::ScopeFunction "with" => { -as => "given_these" };
+
+Basically HashRef in the import list modifies their previous entry.
+
+This module only react to C<"-as">, not to any other options as seen in C<Sub::Exporter>
 
 =head1 AUTHOR
 
