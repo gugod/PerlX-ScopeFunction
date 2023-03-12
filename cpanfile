@@ -1,5 +1,5 @@
 requires 'Keyword::Simple';
-requires 'Text::Balanced';
+requires 'PPR';
 
 on test => sub {
     requires 'Test2::Harness';

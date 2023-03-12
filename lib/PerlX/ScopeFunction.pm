@@ -4,7 +4,7 @@ use v5.36;
 our $VERSION = "0.01";
 
 use Keyword::Simple;
-use Text::Balanced qw( extract_bracketed extract_codeblock );
+use PPR;
 
 our %STASH = ();
 
@@ -61,12 +61,26 @@ sub unimport ($class) {
 }
 
 sub __rewrite_with ($ref) {
-    my $remainder;
-    (my $expr, $remainder) = extract_bracketed($$ref, '()');
-    (my $codeBlock, $remainder) = extract_codeblock( $remainder );
-    $codeBlock =~ s/\{/\{ local \$_ = \$_[-1];/;
-    my $code = '(sub ' . $codeBlock . ')->' . $expr . ";";
-    $$ref = $code . $remainder;
+    return unless $$ref =~ m{
+        \A
+        (?&PerlOWS)
+        (?<expr> (?&PerlParenthesesList))
+        (?&PerlOWS)
+        (?<block> (?&PerlBlock))
+        (?<remainder> .*)
+        $PPR::GRAMMAR
+    }xs;
+
+    my $expr = $+{"expr"};
+    my $remainder = $+{"remainder"};
+
+    # This is meant to remove the surrounding bracket characters ('{' and '}')
+    my ($statements) = substr($+{"block"}, 1, -1);
+
+    $$ref = '(sub { local $_ = $_[-1];'
+        . $statements
+        . '})->' . $expr . ';'
+        . $remainder;
 }
 
 1;
