@@ -182,13 +182,13 @@ is also assigned the last value of the list (C<$_[-1]>).
 =head2 C<let ( Assignment EXPR ) BLOCK>
 
 The C<let> keyword can be used to create locally readonly variables in
-a smaller scope (code block). The keyword `let` should be followed by a list of
+a smaller scope (code block). The keyword C<let> should be followed by a list of
 assignment expressions, then a block.
 
     let ( Assignments EXPR ) BLOCK
 
 The C<Assignments EXPR> should be placed a list of assignment
-statements seperated by by semicolons. They are executed in the
+statements seperated by semicolons. They are executed in the
 defining order and in the process, new readonly-variables are created
 inside the BLOCK. Variables created in the beginning of this list of
 can be used in the latter positions.
