@@ -7,10 +7,9 @@ subtest "single scalar context statement", sub {
     }
 };
 
-subtest "single list-context statement", sub {
-    let ($bar = 1, $foo = 2) {
-        is $foo, 2;
-        is $bar, 1;
+subtest "single list context statement", sub {
+    let (@foo = (1,2,3)) {
+        is \@foo, [1,2,3];
     }
 };
 
