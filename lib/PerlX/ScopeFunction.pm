@@ -149,16 +149,19 @@ PerlX::ScopeFunction - new keywords for creating scopes.
 
 =head1 SYNOPSIS
 
-Use C<with> keyword to constraint the result of the given expression
-to a smaller lexical scope.
+    use List::MoreUtils qw( part );
+    use PerlX::ScopeFunction qw( let with );
 
-    use PerlX::ScopeFunction;
-
-    with ( grep { $_ % 2 == 0 } @input ) {
-        my @even_nums = @_;
-
-        say "There are " . scalar(@even_nums) . " even numbers";
+    with ( part { $_ % 2 } @input ) {
+        my ($evens, $odds) = @_;
+        say "There are " . scalar(@$evens) . " even numbers: " . join(" ", @$evens);
+        say "There are " . scalar(@$odds) .  " odd numbers: " . join(" ", @$odds);
     }
+
+    let ($max = max(@input)) {
+        ...
+    }
+
 
 =head1 DESCRIPTION
 
@@ -175,6 +178,34 @@ to a smaller scope (code block):
 The EXPR are evaluated in list context, and the result (a list) is
 available inside BLOCK as C<@_>. The conventional topic variable C<$_>
 is also assigned the last value of the list (C<$_[-1]>).
+
+=head2 C<let ( Assignment EXPR ) BLOCK>
+
+The C<let> keyword can be used to create locally readonly variables in
+a smaller scope (code block). The keyword `let` should be followed by a list of
+assignment expressions, then a block.
+
+    let ( Assignments EXPR ) BLOCK
+
+The C<Assignments EXPR> should be placed a list of assignment
+statements seperated by by semicolons. They are executed in the
+defining order and in the process, new readonly-variables are created
+inside the BLOCK. Variables created in the beginning of this list of
+can be used in the latter positions.
+
+For example:
+
+    let ( $foo = 1 ; $bar = 2 ; $baz = $foo + $bar ) {
+        say $foo; #=> 1
+        say $bar; #=> 2
+        say $baz; #=> 3
+    }
+
+Array and Hashes can also be created this way:
+
+    let ( @foo = (1,2,3) ;  %bar = (bar => 1) ; $baz = 42 ) {
+        ...
+    }
 
 =head1 Alternative names
 
