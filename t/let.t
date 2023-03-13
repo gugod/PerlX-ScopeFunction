@@ -42,4 +42,24 @@ subtest "multiple statements", sub {
     }
 };
 
+subtest "whitespaces", sub {
+    let
+        ($foo=1;$bar=[2,3])
+            { is $foo, 1;
+              is $bar, array { item 2; item 3; end } }
+
+    let ($foo=1;$bar=[2,3]) {
+        is $foo, 1;
+        is $bar, array { item 2; item 3; end };
+    }
+
+    let (
+        $foo = 1;
+        $bar = [2,3];
+    ) {
+        is $foo, 1;
+        is $bar, array { item 2; item 3; end };
+    }
+};
+
 done_testing;
