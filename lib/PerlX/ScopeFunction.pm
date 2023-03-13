@@ -168,7 +168,11 @@ PerlX::ScopeFunction - new keywords for creating scopes.
 Scope functions can be used to create small lexical scope, inside
 which the results of an given expression are used, but not outside.
 
-=head2 C<with (EXPR) BLOCK>
+This module provide 2 extra keywords -- C<with> and C<let> -- for
+creating creating scopes that looks a little bit better than just a
+bare code BLOCK.
+
+=head2 C<with>
 
 The C<with> keyword can be used to bring the result of an given EXPR
 to a smaller scope (code block):
@@ -179,45 +183,52 @@ The EXPR are evaluated in list context, and the result (a list) is
 available inside BLOCK as C<@_>. The conventional topic variable C<$_>
 is also assigned the last value of the list (C<$_[-1]>).
 
-=head2 C<let ( Assignment EXPR ) BLOCK>
+=head2 C<let>
 
 The C<let> keyword can be used to create locally readonly variables in
-a smaller scope (code block). The keyword C<let> should be followed by a list of
-assignment expressions, then a block.
+a smaller scope (code block). The keyword C<let> should be followed by
+a list of assignment expressions, then a block.
 
-    let ( Assignments EXPR ) BLOCK
+    let ( ASSIGNMENTS ) BLOCK
 
-The C<Assignments EXPR> should be placed a list of assignment
-statements seperated by semicolons. They are executed in the
-defining order and in the process, new readonly-variables are created
+The C<ASSIGNMENTS> means a list of assignment statements seperated by
+semicolons, and the operator must C<=>. They are evalutade in the same
+order as they are defined and becomes new, readyonly, variables are
 inside the BLOCK. Variables created in the beginning of this list of
 can be used in the latter positions.
 
-For example:
+If in the current scope, thee are variables with identical names as
+the LHS in the ASSIGNMENTS, they are masked in the let-block.
 
-    let ( $foo = 1 ; $bar = 2 ; $baz = $foo + $bar ) {
-        say $foo; #=> 1
-        say $bar; #=> 2
-        say $baz; #=> 3
+For example, these would creating 3 new variables in the let-block
+that mask the ones with identical names in the current scope.
+
+    my ($foo, $bar, $baz) = (10, 20, 30);
+    let ($foo = 1; $bar = 2; $baz = $foo + $bar) {
+        say "$foo $bar $baz"; #=> 1 2 3
     }
+    say "$foo $bar $baz"; #=> 10 20 30
 
 Array and Hashes can also be created this way:
 
-    let ( @foo = (1,2,3) ;  %bar = (bar => 1) ; $baz = 42 ) {
+    let (@foo = (1,2,3); %bar = (bar => 1); $baz = 42) {
         ...
     }
 
-=head1 Alternative names
+=head1 Importing as different names
 
-Since the keywords provided in this module are commonly defined in other CPAN modules, this module also provides a way to let users to import those keywords as different name, with a conventional spec also seen in L<Sub::Exporter>.
+Since the keywords provided in this module are commonly defined in
+other CPAN modules, this module also provides a way to let users to
+import those keywords as different name, with a conventional spec also
+seen in L<Sub::Exporter>.
 
-For example, to import C<with> as "given_these", you say:
+For example, to import C<with> as C<given_these>, you say:
 
     use PerlX::ScopeFunction "with" => { -as => "given_these" };
 
-Basically HashRef in the import list modifies their previous entry.
-
-This module only react to C<"-as">, not to any other options as seen in C<Sub::Exporter>
+Basically whenever there is a HashRef in the import list, previous
+entries is imported. But C<"-as"> is the only meaningful key. All
+other options seen in C<Sub::Exporter> are ignored.
 
 =head1 AUTHOR
 
