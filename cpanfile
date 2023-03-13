@@ -1,3 +1,4 @@
+requires 'Const::Fast';
 requires 'Keyword::Simple';
 requires 'PPR';
 

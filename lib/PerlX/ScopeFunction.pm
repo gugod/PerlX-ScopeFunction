@@ -3,6 +3,7 @@ use v5.36;
 
 our $VERSION = "0.01";
 
+use Const::Fast ();
 use Keyword::Simple;
 use PPR;
 
@@ -100,7 +101,14 @@ sub __rewrite_let ($ref) {
     }xg;
 
     my $code = "(sub {\n";
-    $code .= "my " . $_ . ";\n" for @assignments;
+    for my $assignment (@assignments) {
+        my ($var, $expr) = $assignment =~ m{
+            ((?&PerlVariable)) (?&PerlOWS) = (?&PerlOWS) ((?&PerlExpression))
+            $GRAMMAR
+        }xs;
+
+        $code .= "Const::Fast::const( my $var,  $expr );\n";
+    }
     $code .= $statements
         . "\n})->();\n"
         . $remainder;
