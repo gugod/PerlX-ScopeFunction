@@ -169,8 +169,24 @@ Scope functions can be used to create small lexical scope, inside
 which the results of an given expression are used, but not outside.
 
 This module provide 2 extra keywords -- C<with> and C<let> -- for
-creating creating scopes that looks a little bit better than just a
+creating creating scopes that look a little bit better than just a
 bare code BLOCK.
+
+By C<use>-ing this module without a import list, all keywords are imported.
+To import only wanted keywords, specify them in the import list:
+
+    # Import all keywords
+    use PerlX::ScopeFunction;
+
+    # Import just `let`
+    use PerlX::ScopeFunction qw(let);
+
+    # Import just `with`, and name it differently
+    use PerlX::ScopeFunction 'with' => { -as 'withThese' }
+
+Imported keywords can be removed by a C<no> statement.
+
+    no PerlX::ScopeFunction;
 
 =head2 C<with>
 
@@ -229,6 +245,20 @@ For example, to import C<with> as C<given_these>, you say:
 Basically whenever there is a HashRef in the import list, previous
 entries is imported. But C<"-as"> is the only meaningful key. All
 other options seen in C<Sub::Exporter> are ignored.
+
+=head1 CAVEATS
+
+Due to the fact this module hooks into perl parser, the keywords
+cannot be used without being imported into current namespace.
+Statements like the following does not compile:
+
+     PerlX::ScopeFunction::let( ... ) {
+         ...
+     }
+
+     PerlX::ScopeFunction::with( ... ) {
+         ...
+     }
 
 =head1 AUTHOR
 
