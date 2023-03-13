@@ -67,7 +67,7 @@ my $GRAMMAR = qr{
         (?<LetAssignmentSequence>
             ((?&LetAssignment))
             (?: ; (?&PerlOWS) ((?&LetAssignment)))*
-            (?: ; (?&PerlOWS))?
+            (?: ; )?
         )
 
         (?<LetAssignment>
@@ -81,7 +81,7 @@ my $GRAMMAR = qr{
 sub __rewrite_let ($ref) {
     return unless $$ref =~ m{
         \A (?&PerlOWS)
-        \( (?<assignments> (?&LetAssignmentSequence) ) \)
+        \( (?&PerlOWS) (?<assignments> (?&LetAssignmentSequence) ) (?&PerlOWS) \)
         (?&PerlOWS)
         (?<block> (?&PerlBlock))
         (?<remainder> .*)
@@ -95,7 +95,7 @@ sub __rewrite_let ($ref) {
     my ($statements) = substr($+{"block"}, 1, -1);
 
     my @assignments = grep { defined } $assignments =~ m{
-        ( (?&LetAssignment))
+        ( (?&LetAssignment) )
         (?: ; (?&PerlOWS))?
         $GRAMMAR
     }xg;
