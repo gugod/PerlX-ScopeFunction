@@ -36,6 +36,7 @@ sub __parse_imports (@args) {
 
 sub import ($class, @args) {
     my %handler = (
+        'let' => \&__rewrite_let,
         'with' => \&__rewrite_with,
     );
 
@@ -58,6 +59,53 @@ sub unimport ($class) {
     for my $keyword (@{ $STASH{$class} //[]}) {
         Keyword::Simple::undefine $keyword;
     }
+}
+
+my $GRAMMAR = qr{
+    (?(DEFINE)
+        (?<LetAssignmentSequence>
+            ((?&LetAssignment))
+            (?: ; (?&PerlOWS) ((?&LetAssignment)))*
+            (?: ; (?&PerlOWS))?
+        )
+
+        (?<LetAssignment>
+            (?&PerlVariable) (?&PerlOWS) = (?&PerlOWS) (?&PerlExpression)
+        )
+    )
+
+    $PPR::GRAMMAR
+}x;
+
+sub __rewrite_let ($ref) {
+    return unless $$ref =~ m{
+        \A (?&PerlOWS)
+        \( (?<assignments> (?&LetAssignmentSequence) ) \)
+        (?&PerlOWS)
+        (?<block> (?&PerlBlock))
+        (?<remainder> .*)
+
+        $GRAMMAR
+    }xs;
+
+    my ($assignments, $remainder) = @+{"assignments", "remainder"};
+
+    # This is meant to remove the surrounding bracket characters ('{' and '}')
+    my ($statements) = substr($+{"block"}, 1, -1);
+
+    my @assignments = grep { defined } $assignments =~ m{
+        ( (?&LetAssignment))
+        (?: ; (?&PerlOWS))?
+        $GRAMMAR
+    }xg;
+
+    my $code = "(sub {\n";
+    $code .= "my " . $_ . ";\n" for @assignments;
+    $code .= $statements
+        . "\n})->();\n"
+        . $remainder;
+
+    $$ref = $code;
 }
 
 sub __rewrite_with ($ref) {
