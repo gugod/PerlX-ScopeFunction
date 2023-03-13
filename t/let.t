@@ -28,6 +28,18 @@ subtest "multiple statements", sub {
         is \@bar, [ 1, 2, 3 ];
         is \@foo, [ 4, 5, 6 ];
     }
+
+    let (@bar = (1,2,3); %foo = ( foo => 1 ); $baz = 2) {
+        is \@bar, [ 1, 2, 3 ];
+        is \%foo, hash { field foo => 1; end };
+        is $baz, 2;
+    }
+
+    let ($foo = 1; $bar = 2; $baz = $foo + $bar) {
+        is $foo, 1;
+        is $bar, 2;
+        is $baz, 3;
+    }
 };
 
 done_testing;
