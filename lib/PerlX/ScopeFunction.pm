@@ -1,7 +1,7 @@
 package PerlX::ScopeFunction;
 use v5.36;
 
-our $VERSION = "0.01";
+our $VERSION = "0.02";
 
 use Const::Fast ();
 use Keyword::Simple;
