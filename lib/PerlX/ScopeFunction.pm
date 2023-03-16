@@ -70,13 +70,42 @@ my $GRAMMAR = qr{
             (?: ; )?
         )
 
+        (?<LetAssignmentLHS>
+            (?>(?&PerlLvalue))
+        )
+
         (?<LetAssignment>
-            (?&PerlVariable) (?&PerlOWS) = (?&PerlOWS) (?&PerlExpression)
+            (?&LetAssignmentLHS) (?&PerlOWS) = (?&PerlOWS) (?&PerlExpression)
         )
     )
 
     $PPR::GRAMMAR
 }x;
+
+sub __comb_PerlVariable ($code) {
+    map {
+        s/(?&PerlOWS) $GRAMMAR//xg;
+        $_
+    } map {
+        grep { defined } m/((?&PerlVariable)) $GRAMMAR/xsg;
+    } $code
+}
+
+sub __parse_LetAssignmentSequence ($code) {
+    map {
+        my $expr = $_;
+        my ($lhs) = $expr =~ m/\A ((?&LetAssignmentLHS)) $GRAMMAR /xs;
+
+        +{
+            "expr" => $expr,
+            "lhs" => $lhs,
+            "variables" => [ __comb_PerlVariable($lhs) ],
+        }
+    } grep { defined } $code =~ m{
+        ( (?>(?&LetAssignment)) ) (?: ; (?&PerlOWS))?
+        $GRAMMAR
+    }xg;
+}
 
 sub __rewrite_let ($ref) {
     return unless $$ref =~ m{
@@ -94,20 +123,16 @@ sub __rewrite_let ($ref) {
     # This is meant to remove the surrounding bracket characters ('{' and '}')
     my ($statements) = substr($+{"block"}, 1, -1);
 
-    my @assignments = grep { defined } $assignments =~ m{
-        ( (?&LetAssignment) )
-        (?: ; (?&PerlOWS))?
-        $GRAMMAR
-    }xg;
+    my @assignments = __parse_LetAssignmentSequence( $assignments );
+    my @vars = map { @{ $_->{"variables"} } } @assignments;
 
     my $code = "(sub {\n";
+    $code .= "my (" . join(",", @vars) . ");\n";
     for my $assignment (@assignments) {
-        my ($var, $expr) = $assignment =~ m{
-            ((?&PerlVariable)) (?&PerlOWS) = (?&PerlOWS) ((?&PerlExpression))
-            $GRAMMAR
-        }xs;
-
-        $code .= "Const::Fast::const( my $var,  $expr );\n";
+        $code .= $assignment->{"expr"} . ";\n";
+    }
+    for my $var (@vars) {
+        $code .= "Const::Fast::_make_readonly(\\$var,1);\n";
     }
     $code .= $statements
         . "\n})->();\n"
