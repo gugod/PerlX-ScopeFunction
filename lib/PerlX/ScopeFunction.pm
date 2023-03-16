@@ -174,8 +174,9 @@ PerlX::ScopeFunction - new keywords for creating scopes.
 
 =head1 SYNOPSIS
 
-    use List::MoreUtils qw( part );
     use PerlX::ScopeFunction qw( let with );
+    use List::Util qw( sum0 );
+    use List::MoreUtils qw( part minmax );
 
     with ( part { $_ % 2 } @input ) {
         my ($evens, $odds) = @_;
@@ -183,10 +184,9 @@ PerlX::ScopeFunction - new keywords for creating scopes.
         say "There are " . scalar(@$odds) .  " odd numbers: " . join(" ", @$odds);
     }
 
-    let ($max = max(@input)) {
+    let ( ($min,$max) = minmax(@input); $mean = sum0(@input)/@input ) {
         ...
     }
-
 
 =head1 DESCRIPTION
 
@@ -226,20 +226,41 @@ is also assigned the last value of the list (C<$_[-1]>).
 
 =head2 C<let>
 
-The C<let> keyword can be used to create locally readonly variables in
-a smaller scope (code block). The keyword C<let> should be followed by
-a list of assignment expressions, then a block.
+The C<let> keyword can be used to create readonly C<my>- variables in
+a smaller scope (code block).
 
-    let ( ASSIGNMENTS ) BLOCK
+The keyword C<let> should be followed by a list of variable
+declarations, then a block.
 
-The C<ASSIGNMENTS> means a list of assignment statements seperated by
-semicolons, and the operator must C<=>. They are evalutade in the same
-order as they are defined and becomes new, readyonly, variables are
-inside the BLOCK. Variables created in the beginning of this list of
-can be used in the latter positions.
+    let ( DECLARATIONS ) BLOCK
+
+The word C<DECLARATIONS> here means a list of variable declaration
+statements seperated by semicolons, except there must be a RHS. They
+must be given without any of C<my>, C<our>, C<state> keywords.
+
+For example, if in the BLOCK you would do these to prepare 3
+convenient variables:
+
+    my $mean = mean(@input);
+    my ($min, $max) = minmax(@input);
+
+With C<let> statements, you do this instead:
+
+    let (
+        $mean = mean(@input);
+        ($min,$max) = minmax(@input);
+    ) {
+        ...
+    }
+
+Declaration are evaluated in the same order as they are given and all
+variables declarated by this are made readonly inside the BLOCK. The
+underlying library to make variables readonly is
+L<Const::Fast>. Variables created in the beginning of this list of can
+be used in the latter positions.
 
 If in the current scope, thee are variables with identical names as
-the LHS in the ASSIGNMENTS, they are masked in the let-block.
+the ones in the DECLARATED, they are masked in the let-block.
 
 For example, these would creating 3 new variables in the let-block
 that mask the ones with identical names in the current scope.
@@ -250,7 +271,7 @@ that mask the ones with identical names in the current scope.
     }
     say "$foo $bar $baz"; #=> 10 20 30
 
-Array and Hashes can also be created this way:
+Array and Hash can also be created:
 
     let (@foo = (1,2,3); %bar = (bar => 1); $baz = 42) {
         ...
@@ -260,22 +281,22 @@ Array and Hashes can also be created this way:
 
 Since the keywords provided in this module are commonly defined in
 other CPAN modules, this module also provides a way to let users to
-import those keywords as different name, with a conventional spec also
+import those keywords as different names, with a conventional spec also
 seen in L<Sub::Exporter>.
 
 For example, to import C<with> as C<given_these>, you say:
 
     use PerlX::ScopeFunction "with" => { -as => "given_these" };
 
-Basically whenever there is a HashRef in the import list, previous
-entries is imported. But C<"-as"> is the only meaningful key. All
-other options seen in C<Sub::Exporter> are ignored.
+Basically HashRef in import list becomes modifiers of the previous
+entry. However, This module supports only the modifier C<-as> but not
+other ones as seen in L<Sub::Exporter>.
 
 =head1 CAVEATS
 
 Due to the fact this module hooks into perl parser, the keywords
 cannot be used without being imported into current namespace.
-Statements like the following does not compile:
+Statements like the following do not compile:
 
      PerlX::ScopeFunction::let( ... ) {
          ...
