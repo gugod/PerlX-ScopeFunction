@@ -37,11 +37,15 @@ sub __parse_imports (@args) {
 
 sub import ($class, @args) {
     my $caller = (caller)[0];
-    my %keyword_handler = (
-        'let' => \&__rewrite_let,
-        'with' => \&__rewrite_with,
-    );
-    my %nonkeyword_handler = (
+    my %handler = (
+        'let' =>[
+            sub { __define_keyword( \&__rewrite_let, $_[0] ) },
+            sub { __undefine_keyword( $_[0] ) },
+        ],
+        'with' =>[
+            sub { __define_keyword( \&__rewrite_with, $_[0] ) },
+            sub { __undefine_keyword( $_[0] ) },
+        ],
         'also' => [
             sub { __universal_import(\&__also, $_[0]) },
             sub { },
@@ -52,32 +56,22 @@ sub import ($class, @args) {
         if (@args > 0) {
             %{ __parse_imports(@args) };
         } else {
-            map { $_ => $_ } keys %keyword_handler;
+            map { $_ => $_ } keys %handler
         }
     };
 
     for (keys %import_as) {
-        if ($keyword_handler{$_}) {
-            my $keyword = $import_as{$_};
-            Keyword::Simple::define $keyword, $keyword_handler{$_};
-            push @{ $STASH{$class} }, $keyword;
-        }
-        elsif ($nonkeyword_handler{$_}) {
-            my ($importer, $unimporter) = @{$nonkeyword_handler{$_}};
-            my $as = $import_as{$_};
-            $importer->($as);
-            push @{ $STASH{$caller} }, sub { $unimporter->($as) };
-        }
+        my ($importer, $unimporter) = @{$handler{$_}};
+        my $as = $import_as{$_};
+        $importer->($as);
+        push @{ $STASH{$caller} }, sub { $unimporter->($as) };
     }
 }
 
 sub unimport ($class) {
-    for (@{ $STASH{$class} //[]}) {
-        if (ref($_)) {
-            $_->();
-        } else {
-            Keyword::Simple::undefine $_;
-        }
+    my $caller = (caller)[0];
+    for my $unimporter (@{ $STASH{$caller} // []}) {
+        $unimporter->();
     }
 }
 
@@ -90,6 +84,14 @@ sub __also {
 sub __universal_import ($code, $method) {
     no strict 'refs';
     *{"UNIVERSAL::" . $method} = $code;
+}
+
+sub __define_keyword ($code, $keyword) {
+    Keyword::Simple::define $keyword, $code;
+}
+
+sub __undefine_keyword ($keyword) {
+    Keyword::Simple::undefine $keyword;
 }
 
 my $GRAMMAR = qr{
