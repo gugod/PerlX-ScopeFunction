@@ -11,19 +11,19 @@ subtest "`also` is UNIVERSAL", sub {
 
     my $pass = 0;
     $obj->also(sub {
-                   is $_[0]->isa('O');
+                   is $_[0]->isa('O'), T();
                    $pass++;
                })
         ->also(sub {
-                   is $_[0]->isa('O');
+                   is $_[0]->isa('O'), T();
                    $pass++;
                });
     is $pass, 2;
 };
 
 no PerlX::ScopeFunction;
-subtest "`also` is unimported", sub {
-    is $obj->can('also'), F();
+subtest "`also` cannot be unimported", sub {
+    is $obj->can('also'), T();
 };
 
 done_testing;
