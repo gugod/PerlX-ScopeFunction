@@ -36,30 +36,60 @@ sub __parse_imports (@args) {
 }
 
 sub import ($class, @args) {
-    my %handler = (
+    my $caller = (caller)[0];
+    my %keyword_handler = (
         'let' => \&__rewrite_let,
         'with' => \&__rewrite_with,
+    );
+    my %nonkeyword_handler = (
+        'also' => [
+            sub { __universal_import(\&__also, $_[0]) },
+            sub { },
+        ],
     );
 
     my %import_as = do {
         if (@args > 0) {
             %{ __parse_imports(@args) };
         } else {
-            map { $_ => $_ } keys %handler;
+            map { $_ => $_ } keys %keyword_handler;
         }
     };
 
     for (keys %import_as) {
-        my $keyword = $import_as{$_};
-        Keyword::Simple::define $keyword, $handler{$_};
-        push @{ $STASH{$class} }, $keyword;
+        if ($keyword_handler{$_}) {
+            my $keyword = $import_as{$_};
+            Keyword::Simple::define $keyword, $keyword_handler{$_};
+            push @{ $STASH{$class} }, $keyword;
+        }
+        elsif ($nonkeyword_handler{$_}) {
+            my ($importer, $unimporter) = @{$nonkeyword_handler{$_}};
+            my $as = $import_as{$_};
+            $importer->($as);
+            push @{ $STASH{$caller} }, sub { $unimporter->($as) };
+        }
     }
 }
 
 sub unimport ($class) {
-    for my $keyword (@{ $STASH{$class} //[]}) {
-        Keyword::Simple::undefine $keyword;
+    for (@{ $STASH{$class} //[]}) {
+        if (ref($_)) {
+            $_->();
+        } else {
+            Keyword::Simple::undefine $_;
+        }
     }
+}
+
+sub __also {
+    my ($self, $code) = @_;
+    $self->$code();
+    return $self;
+}
+
+sub __universal_import ($code, $method) {
+    no strict 'refs';
+    *{"UNIVERSAL::" . $method} = $code;
 }
 
 my $GRAMMAR = qr{
