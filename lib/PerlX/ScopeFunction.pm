@@ -259,11 +259,12 @@ underlying library to make variables readonly is
 L<Const::Fast>. Variables created in the beginning of this list of can
 be used in the latter positions.
 
-If in the current scope, thee are variables with identical names as
-the ones in the DECLARATED, they are masked in the let-block.
+If in the current scope, there are variables with identical names as
+the ones in the DECLARATIONS, they are masked in the let-block.
 
-For example, these would creating 3 new variables in the let-block
-that mask the ones with identical names in the current scope.
+For example, in the following example code, 3 new variables are
+created in the let-block and they the ones with identical names
+outside of the let-block.
 
     my ($foo, $bar, $baz) = (10, 20, 30);
     let ($foo = 1; $bar = 2; $baz = $foo + $bar) {
@@ -288,9 +289,9 @@ For example, to import C<with> as C<given_these>, you say:
 
     use PerlX::ScopeFunction "with" => { -as => "given_these" };
 
-Basically HashRef in import list becomes modifiers of the previous
-entry. However, This module supports only the modifier C<-as> but not
-other ones as seen in L<Sub::Exporter>.
+Basically HashRef in import list becomes modifiers of their previous
+entries. However, This module supports only the modifier C<-as> but
+not other ones as seen in L<Sub::Exporter>.
 
 =head1 CAVEATS
 
