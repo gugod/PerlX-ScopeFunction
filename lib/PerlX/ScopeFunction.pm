@@ -240,9 +240,9 @@ PerlX::ScopeFunction - new keywords for creating scopes.
 Scope functions can be used to create small lexical scope, inside
 which the results of an given expression are used, but not outside.
 
-This module provide 2 extra keywords -- C<with> and C<let> -- for
-creating creating scopes that look a little bit better than just a
-bare code BLOCK.
+This module provide extra keywords / methods / symbols for creating
+scopes that help grouping related statements together, or generally
+help on making the code look more fluent.
 
 By C<use>-ing this module without a import list, all keywords are imported.
 To import only wanted keywords, specify them in the import list:
