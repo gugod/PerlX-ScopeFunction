@@ -3,11 +3,14 @@ use v5.36;
 
 our $VERSION = "0.03";
 
+use Package::Stash;
 use Const::Fast ();
 use Keyword::Simple;
 use PPR;
 
 our %STASH = ();
+
+our $tap = \&__also;
 
 sub __parse_imports (@args) {
     my %import_as;
@@ -50,6 +53,10 @@ sub import ($class, @args) {
             sub { __universal_import(\&__also, $_[0]) },
             sub { },
         ],
+        '$tap' => [
+            sub { __import_scalar_symbol(\\&__also, $_[0], $_[1]) },
+            sub { __unimport_scalar_symbol($_[0], $_[1]) },
+        ],
     );
 
     my %import_as = do {
@@ -63,8 +70,8 @@ sub import ($class, @args) {
     for (keys %import_as) {
         my ($importer, $unimporter) = @{$handler{$_}};
         my $as = $import_as{$_};
-        $importer->($as);
-        push @{ $STASH{$caller} }, sub { $unimporter->($as) };
+        $importer->($as, $caller);
+        push @{ $STASH{$caller} }, sub { $unimporter->($as, $caller) };
     }
 }
 
@@ -79,6 +86,14 @@ sub __also {
     my ($self, $code) = @_;
     $self->$code();
     return $self;
+}
+
+sub __import_scalar_symbol ($code, $symbol, $pkg) {
+    Package::Stash->new($pkg)->add_symbol($symbol, $code);
+}
+
+sub __unimport_scalar_symbol ($symbol, $pkg) {
+    Package::Stash->new($pkg)->remove_symbol($symbol);
 }
 
 sub __universal_import ($code, $method) {
