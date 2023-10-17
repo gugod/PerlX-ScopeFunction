@@ -56,7 +56,16 @@ package TestScope2 {
     }
 }
 
+package TestScope3 {
+    use Test2::V0;
+    use PerlX::ScopeFunction '$tap' => { -as => '$also' };
+    sub run {
+        is $also, D(), '$also is imported';
+    }
+}
+
 TestScope1->run();
 TestScope2->run();
+TestScope3->run();
 
 done_testing;
