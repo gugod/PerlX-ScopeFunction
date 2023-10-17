@@ -325,6 +325,63 @@ Array and Hash can also be created:
         ...
     }
 
+=head2 C<$tap>
+
+C<$tap> is a scalar with CodeRef inside that can be inserted of into a
+chain of method calls, do some side actions, then resume.
+
+Syntax-wise it is supposed to used like this:
+
+    EXPR -> $tap(sub BLOCK) -> EXPR
+
+For example, the following code would produce a warning message before
+calling C<send()> method on object C<$o>:
+
+    my $o = Example::Mail->new( body => $args{body}, to => $args{to} )
+        ->$tap(sub { warn "Mail sening to: " . $_->to ) })
+        ->send();
+
+In side the tap code block, C<$_> (and C<$_[0]>) refers to the object
+from the EXPR beforehand. The return value of tap code block is thrown
+away, and the C<$tap> itself always evaulates to the same object C<$_>
+it is called on. This makes it easier to do some side-effects in the
+middle of a call chain, but without having to rewrite the call chain
+as 2 separate statements. It can also be useful to work around methods
+with "inconvenient" return values, or to group a sequence of
+object-setup statements together, in a tighter scope:
+
+For example, here we construct an C<Example::Mail>, fill it a
+recipient and body, but we want to check some external factors before
+actully send it:
+
+    my $o = Example::Mail->new()
+        ->$tap(sub {
+            $_->set_body( $args{body} );
+            $_->set_to( $args{to} );
+
+            $_->ping_mail_server() or die "No internet";
+            $_->check_recipient_mood() or die "Bad timing";
+        })
+        ->send();
+
+The C<$tap> can be think as a method that can be invoked on any
+objects. But it would not work on plain scalar values, or anything you
+couldn't call methods on.
+
+Since it is just a scalar variable, it can also be copied to a lexical
+variable, under whatever more sensible names:
+
+    sub run ($self) {
+        my $also = $PerlX::ScopeFunction::tap;
+
+        $self->$also(sub { warn "Star running" })
+            ->do_run();
+    }
+
+See also the C<tap> method from L<Mojo::Base>. Or the scope function
+C<also> in Kotlin programming language: L<Kotlin Scope
+Function|https://kotlinlang.org/docs/scope-functions.html>
+
 =head1 Importing as different names
 
 Since the keywords provided in this module are commonly defined in
