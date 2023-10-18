@@ -3,11 +3,14 @@ use v5.36;
 
 our $VERSION = "0.03";
 
+use Package::Stash;
 use Const::Fast ();
 use Keyword::Simple;
 use PPR;
 
 our %STASH = ();
+
+our $tap = \&__also;
 
 sub __parse_imports (@args) {
     my %import_as;
@@ -50,6 +53,10 @@ sub import ($class, @args) {
             sub { __universal_import(\&__also, $_[0]) },
             sub { },
         ],
+        '$tap' => [
+            sub { __import_scalar_symbol(\\&__also, $_[0], $_[1]) },
+            sub { __unimport_scalar_symbol($_[0], $_[1]) },
+        ],
     );
 
     my %import_as = do {
@@ -63,8 +70,8 @@ sub import ($class, @args) {
     for (keys %import_as) {
         my ($importer, $unimporter) = @{$handler{$_}};
         my $as = $import_as{$_};
-        $importer->($as);
-        push @{ $STASH{$caller} }, sub { $unimporter->($as) };
+        $importer->($as, $caller);
+        push @{ $STASH{$caller} }, sub { $unimporter->($as, $caller) };
     }
 }
 
@@ -79,6 +86,14 @@ sub __also {
     my ($self, $code) = @_;
     $self->$code();
     return $self;
+}
+
+sub __import_scalar_symbol ($code, $symbol, $pkg) {
+    Package::Stash->new($pkg)->add_symbol($symbol, $code);
+}
+
+sub __unimport_scalar_symbol ($symbol, $pkg) {
+    Package::Stash->new($pkg)->remove_symbol($symbol);
 }
 
 sub __universal_import ($code, $method) {
@@ -225,9 +240,9 @@ PerlX::ScopeFunction - new keywords for creating scopes.
 Scope functions can be used to create small lexical scope, inside
 which the results of an given expression are used, but not outside.
 
-This module provide 2 extra keywords -- C<with> and C<let> -- for
-creating creating scopes that look a little bit better than just a
-bare code BLOCK.
+This module provide extra keywords / methods / symbols for creating
+scopes that help grouping related statements together, or generally
+help on making the code look more fluent.
 
 By C<use>-ing this module without a import list, all keywords are imported.
 To import only wanted keywords, specify them in the import list:
@@ -309,6 +324,63 @@ Array and Hash can also be created:
     let (@foo = (1,2,3); %bar = (bar => 1); $baz = 42) {
         ...
     }
+
+=head2 C<$tap>
+
+C<$tap> is a scalar with CodeRef inside that can be inserted of into a
+chain of method calls, do some side actions, then resume.
+
+Syntax-wise it is supposed to used like this:
+
+    EXPR -> $tap(sub BLOCK) -> EXPR
+
+For example, the following code would produce a warning message before
+calling C<send()> method on object C<$o>:
+
+    my $o = Example::Mail->new( body => $args{body}, to => $args{to} )
+        ->$tap(sub { warn "Mail sening to: " . $_->to ) })
+        ->send();
+
+In side the tap code block, C<$_> (and C<$_[0]>) refers to the object
+from the EXPR beforehand. The return value of tap code block is thrown
+away, and the C<$tap> itself always evaulates to the same object C<$_>
+it is called on. This makes it easier to do some side-effects in the
+middle of a call chain, but without having to rewrite the call chain
+as 2 separate statements. It can also be useful to work around methods
+with "inconvenient" return values, or to group a sequence of
+object-setup statements together, in a tighter scope:
+
+For example, here we construct an C<Example::Mail>, fill it a
+recipient and body, but we want to check some external factors before
+actully send it:
+
+    my $o = Example::Mail->new()
+        ->$tap(sub {
+            $_->set_body( $args{body} );
+            $_->set_to( $args{to} );
+
+            $_->ping_mail_server() or die "No internet";
+            $_->check_recipient_mood() or die "Bad timing";
+        })
+        ->send();
+
+The C<$tap> can be think as a method that can be invoked on any
+objects. But it would not work on plain scalar values, or anything you
+couldn't call methods on.
+
+Since it is just a scalar variable, it can also be copied to a lexical
+variable, under whatever more sensible names:
+
+    sub run ($self) {
+        my $also = $PerlX::ScopeFunction::tap;
+
+        $self->$also(sub { warn "Star running" })
+            ->do_run();
+    }
+
+See also the C<tap> method from L<Mojo::Base>. Or the scope function
+C<also> in Kotlin programming language: L<Kotlin Scope
+Function|https://kotlinlang.org/docs/scope-functions.html>
 
 =head1 Importing as different names
 
