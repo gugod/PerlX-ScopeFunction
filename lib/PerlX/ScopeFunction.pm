@@ -4,13 +4,14 @@ use v5.36;
 our $VERSION = "0.03";
 
 use Package::Stash;
-use Const::Fast ();
+use Const::Fast qw( const );
 use Keyword::Simple;
 use PPR;
 
 our %STASH = ();
 
-our $tap = \&__also;
+const our $also => \&__also;
+const our $tap => \&__also;
 
 sub __parse_imports (@args) {
     my %import_as;
@@ -49,9 +50,9 @@ sub import ($class, @args) {
             sub { __define_keyword( \&__rewrite_with, $_[0] ) },
             sub { __undefine_keyword( $_[0] ) },
         ],
-        'also' => [
-            sub { __universal_import(\&__also, $_[0]) },
-            sub { },
+        '$also' => [
+            sub { __import_scalar_symbol(\\&__also, $_[0], $_[1]) },
+            sub { __unimport_scalar_symbol($_[0], $_[1]) },
         ],
         '$tap' => [
             sub { __import_scalar_symbol(\\&__also, $_[0], $_[1]) },
@@ -94,11 +95,6 @@ sub __import_scalar_symbol ($code, $symbol, $pkg) {
 
 sub __unimport_scalar_symbol ($symbol, $pkg) {
     Package::Stash->new($pkg)->remove_symbol($symbol);
-}
-
-sub __universal_import ($code, $method) {
-    no strict 'refs';
-    *{"UNIVERSAL::" . $method} = $code;
 }
 
 sub __define_keyword ($code, $keyword) {
@@ -325,13 +321,18 @@ Array and Hash can also be created:
         ...
     }
 
-=head2 C<$tap>
+=head2 C<$tap>, and C<$also>
 
 C<$tap> is a scalar with CodeRef inside that can be inserted of into a
 chain of method calls, do some side actions, then resume.
 
-Syntax-wise it is supposed to used like this:
+C<$also> is an alternative name of C<$tap>. They are completely
+identical. Import and use which ever that is more comprehensible to
+you.
 
+Syntax-wise C<$tap> is supposed to used like these:
+
+    EXPR -> $tap(sub BLOCK)
     EXPR -> $tap(sub BLOCK) -> EXPR
 
 For example, the following code would produce a warning message before
