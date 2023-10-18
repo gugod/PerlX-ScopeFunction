@@ -256,6 +256,8 @@ Imported keywords can be removed by a C<no> statement.
 
     no PerlX::ScopeFunction;
 
+=head1 Importable keywords / methods / symbols.
+
 =head2 C<with>
 
 The C<with> keyword can be used to bring the result of an given EXPR
@@ -373,9 +375,9 @@ Since it is just a scalar variable, it can also be copied to a lexical
 variable, under whatever more sensible names:
 
     sub run ($self) {
-        my $also = $PerlX::ScopeFunction::tap;
+        my $byTheWay = $PerlX::ScopeFunction::tap;
 
-        $self->$also(sub { warn "Star running" })
+        $self->$byTheWay(sub { warn "Star running" })
             ->do_run();
     }
 
