@@ -1,5 +1,7 @@
 Revision history of PerlX-ScopeFunction
 
+        - Add `$do`
+
 0.04    2023-10-19
         - Add `$tap` and `$also'.
 
