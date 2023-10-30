@@ -96,6 +96,7 @@ sub __do {
 
 sub __also {
     my ($self, $code) = @_;
+    local $_ = $self;
     $self->$code();
     return $self;
 }
