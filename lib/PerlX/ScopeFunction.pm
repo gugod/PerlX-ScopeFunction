@@ -1,7 +1,7 @@
 package PerlX::ScopeFunction;
 use v5.36;
 
-our $VERSION = "0.04";
+our $VERSION = "0.05";
 
 use Package::Stash;
 use Const::Fast qw( const );
