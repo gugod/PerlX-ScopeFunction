@@ -323,9 +323,29 @@ Array and Hash can also be created:
         ...
     }
 
+=head2 C<$do>
+
+C<$do> is a method that can be used as a call on any objects. It takes
+a CodeRef, evaluates the CodeRef on the context of the object being
+called on, and returns the result.
+
+Syntax-wise, C<$do> is used like this:
+
+    EXPR -> $do(sub BLOCK)
+
+For example, the following code would take an object
+and compute a sha1 digest:
+
+    my $digest = $o->$do(sub {
+        sha1($_->header->title . $_->body->content)
+    });
+
+Inside the CodeRef BLOCK, both C<$_> and C<$_[0]> are an alias to the
+object being called on.
+
 =head2 C<$tap>, and C<$also>
 
-C<$tap> is a scalar with CodeRef inside that can be inserted of into a
+C<$tap> is a method that takes a CodeRef can be inserted of into a
 chain of method calls, do some side actions, then resume.
 
 C<$also> is an alternative name of C<$tap>. They are completely
