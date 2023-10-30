@@ -10,6 +10,7 @@ use PPR;
 
 our %STASH = ();
 
+const our $do => \&__do;
 const our $also => \&__also;
 const our $tap => \&__also;
 
@@ -58,6 +59,10 @@ sub import ($class, @args) {
             sub { __import_scalar_symbol(\\&__also, $_[0], $_[1]) },
             sub { __unimport_scalar_symbol($_[0], $_[1]) },
         ],
+        '$do' => [
+            sub { __import_scalar_symbol(\\&__do, $_[0], $_[1]) },
+            sub { __unimport_scalar_symbol($_[0], $_[1]) },
+        ],
     );
 
     my %import_as = do {
@@ -81,6 +86,12 @@ sub unimport ($class) {
     for my $unimporter (@{ $STASH{$caller} // []}) {
         $unimporter->();
     }
+}
+
+sub __do {
+    my ($self, $code) = @_;
+    local $_ = $self;
+    return $self->$code();
 }
 
 sub __also {
